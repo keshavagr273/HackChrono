@@ -1,5 +1,6 @@
 import BuyerNav from '../../components/BuyerNav'
 import { useCart } from '../../context/CartContext'
+import { apiAuthPost } from '../../lib/api'
 
 export default function Checkout() {
   const { state, totals, dispatch } = useCart()
@@ -10,7 +11,7 @@ export default function Checkout() {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         <h1 className="text-2xl font-bold">Checkout</h1>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
-          <form className="space-y-3 md:col-span-2" onSubmit={(e)=>{e.preventDefault(); alert('Payment processed (placeholder).'); dispatch({ type:'CLEAR' });}}>
+          <form className="space-y-3 md:col-span-2" onSubmit={async (e)=>{e.preventDefault(); try { await apiAuthPost('/api/buyer/orders', { items: state.items.map(i => ({ productId: i.id, name: i.name, price: i.price, quantity: i.quantity, unit: i.unit || 'kg' })) }); alert('Order placed!'); dispatch({ type:'CLEAR' }) } catch (err) { alert('Failed to place order') } }}>
             <div className="rounded-2xl border border-gray-100 p-5 shadow-sm">
               <h2 className="text-lg font-semibold">Delivery Address</h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
