@@ -3,12 +3,8 @@ import BuyerNav from '../../components/BuyerNav'
 import { Link } from 'react-router-dom'
 import { apiGet } from '../../lib/api'
 
-const MOCK_PRODUCTS = [
-  { id: 'p1', name: 'Fresh Tomatoes', price: 20, unit: 'kg', location: 'Nashik', category: 'Vegetables', qtyAvailable: 250, farmer: { id: 'f1', name: 'Anand Farms' }, image: 'https://images.unsplash.com/photo-1546470427-226ed66f7e1e?q=80&w=800&auto=format&fit=crop' },
-  { id: 'p2', name: 'Organic Onions', price: 18, unit: 'kg', location: 'Pune', category: 'Vegetables', qtyAvailable: 500, farmer: { id: 'f2', name: 'Maya Agro' }, image: 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?q=80&w=800&auto=format&fit=crop' },
-  { id: 'p3', name: 'Basmati Rice', price: 65, unit: 'kg', location: 'Karnal', category: 'Grains', qtyAvailable: 1000, farmer: { id: 'f3', name: 'Karnal Agro Co-op' }, image: 'https://images.unsplash.com/photo-1561047029-3000e62f0a43?q=80&w=800&auto=format&fit=crop' },
-  { id: 'p4', name: 'Mustard Seeds', price: 58, unit: 'kg', location: 'Jaipur', category: 'Oilseeds', qtyAvailable: 300, farmer: { id: 'f4', name: 'Rajasthan Kisan' }, image: 'https://images.unsplash.com/photo-1514517220038-65f8d1b620b6?q=80&w=800&auto=format&fit=crop' },
-]
+// Start with empty; we load from backend
+const MOCK_PRODUCTS = []
 
 export default function Market() {
   const [q, setQ] = useState('')
@@ -31,8 +27,20 @@ export default function Market() {
         if (category) qs.set('category', category)
         if (location) qs.set('location', location)
         if (maxPrice) qs.set('maxPrice', maxPrice)
-        const data = await apiGet(`/api/buyer/products?${qs.toString()}`)
-        if (!aborted) setItems(data)
+        const data = await apiGet(`/api/listings?${qs.toString()}`)
+        if (!aborted) setItems(
+          data.map(l => ({
+            id: l._id,
+            name: l.title,
+            price: l.pricePerKg,
+            unit: 'kg',
+            location: l.location || '',
+            category: l.category || '',
+            qtyAvailable: l.quantityKg || 0,
+            farmer: { id: l.seller, name: 'Farmer' },
+            image: (l.images && l.images[0]) || 'https://via.placeholder.com/800x600?text=Listing'
+          }))
+        )
       } catch (e) {
         if (!aborted) setError('Failed to load products')
       } finally {
