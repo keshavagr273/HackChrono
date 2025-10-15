@@ -237,8 +237,20 @@ function Footer() {
 
 function AuthModal({ isOpen, mode, onClose }) {
   const [role, setRole] = useState('farmer')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   useEffect(() => { setRole('farmer') }, [mode, isOpen])
   if (!isOpen) return null
+
+  // Resolve API base robustly even if env accidentally points to Vite dev server
+  const getApiBase = () => {
+    const envUrl = import.meta.env.VITE_API_URL
+    if (envUrl && /^https?:\/\//.test(envUrl)) {
+      if (envUrl.includes('localhost:517')) return 'http://localhost:5000'
+      return envUrl
+    }
+    return 'http://localhost:5000'
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -251,13 +263,44 @@ function AuthModal({ isOpen, mode, onClose }) {
           <button onClick={() => setRole('farmer')} className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${role==='farmer'?'border-brand-600 text-brand-700 bg-brand-50':'border-gray-300 hover:bg-gray-50'}`}>I am a Farmer</button>
           <button onClick={() => setRole('buyer')} className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${role==='buyer'?'border-brand-600 text-brand-700 bg-brand-50':'border-gray-300 hover:bg-gray-50'}`}>I am a Buyer</button>
         </div>
-        <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); onClose(); alert(`${mode} as ${role} submitted`) }}>
+        <form className="mt-4 space-y-3" onSubmit={async (e) => {
+          e.preventDefault()
+          setError('')
+          setLoading(true)
+          const form = e.currentTarget
+          const formData = new FormData(form)
+          const name = formData.get('name')
+          const email = formData.get('email')
+          const password = formData.get('password')
+          const payload = mode === 'signup' ? { name, email, password, role: role === 'farmer' ? 'seller' : 'buyer' } : { email, password }
+          try {
+            const res = await fetch(`${getApiBase()}/api/auth/${mode}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+            const contentType = res.headers.get('content-type') || ''
+            const data = contentType.includes('application/json') ? await res.json() : await res.text()
+            if (!res.ok) {
+              const msg = typeof data === 'object' && data?.message ? data.message : (data || 'Request failed')
+              throw new Error(msg)
+            }
+            localStorage.setItem('token', data.token)
+            localStorage.setItem('user', JSON.stringify(data.user))
+            onClose()
+            const roleToRoute = data.user.role === 'seller' ? '/seller' : '/buyer'
+            window.location.assign(roleToRoute)
+          } catch (err) {
+            setError(err.message || 'Network error. Please try again.')
+          } finally { setLoading(false) }
+        }}>
           {mode === 'signup' && (
-            <input required type="text" placeholder={role==='farmer'?'Full name':'Company name'} className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input name="name" required type="text" placeholder={role==='farmer'?'Full name':'Company name'} className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
           )}
-          <input required type="email" placeholder="Email" className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <input required type="password" placeholder="Password" className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <button className="w-full rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">{mode === 'login' ? 'Log in' : 'Create account'}</button>
+          <input name="email" required type="email" placeholder="Email" className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <input name="password" required type="password" placeholder="Password" className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button disabled={loading} className="w-full rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 disabled:opacity-50">{loading ? 'Please wait...' : (mode === 'login' ? 'Log in' : 'Create account')}</button>
           <p className="text-center text-xs text-gray-500">By continuing you agree to our Terms & Privacy.</p>
         </form>
       </div>
