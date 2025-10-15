@@ -35,8 +35,8 @@ export default function Orders() {
           <section className="rounded-2xl border border-gray-100 p-5 shadow-sm">
             <h2 className="text-lg font-semibold">Current Orders</h2>
             <div className="mt-3 space-y-3">
-              {orders.filter(o=>o.status!=='Delivered').map(o => (
-                <div key={o.id} className="rounded-lg bg-gray-50 p-4">
+              {orders.filter(o=>!['completed','cancelled','Delivered'].includes((o.status||'').toLowerCase())).map(o => (
+                <div key={o._id} className="rounded-lg bg-gray-50 p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Order {o._id}</p>
@@ -44,9 +44,15 @@ export default function Orders() {
                     </div>
                     <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700">{o.status}</span>
                   </div>
-                  <ul className="mt-2 text-sm text-gray-700 list-disc pl-5">
-                    {o.items.map((it, idx) => (<li key={idx}>{it.name} • {it.quantity} {it.unit}</li>))}
-                  </ul>
+                  <div className="mt-2 text-sm text-gray-700">
+                    {o.items && o.items.length > 0 ? (
+                      <ul className="list-disc pl-5">
+                        {o.items.map((it, idx) => (<li key={idx}>{it.name} • {it.quantity} {it.unit}</li>))}
+                      </ul>
+                    ) : (
+                      <p>{o.quantityKg} kg @ ₹{o.pricePerKg}/kg • Total ₹{Number(o.amount||0).toFixed(2)}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -63,7 +69,7 @@ export default function Orders() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">{o.status}</p>
-                    <p className="font-medium">₹{Number(o.total).toFixed(2)}</p>
+                    <p className="font-medium">₹{Number(o.total ?? o.amount ?? 0).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
