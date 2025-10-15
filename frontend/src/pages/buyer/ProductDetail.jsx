@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import BuyerNav from '../../components/BuyerNav'
 import { useCart } from '../../context/CartContext'
 import { useEffect, useState } from 'react'
-import { apiGet } from '../../lib/api'
+import { apiGet, apiAuthPost } from '../../lib/api'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -10,14 +10,25 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [qty, setQty] = useState(1)
 
   useEffect(() => {
     let aborted = false
     async function load() {
       try {
         setLoading(true)
-        const data = await apiGet(`/api/buyer/products/${id}`)
-        if (!aborted) setProduct(data)
+        const l = await apiGet(`/api/listings/${id}`)
+        if (!aborted) setProduct({
+          id: l._id,
+          name: l.title,
+          price: l.pricePerKg,
+          unit: 'kg',
+          location: l.location || '',
+          qtyAvailable: l.quantityKg || 0,
+          description: l.description || '',
+          images: l.images || [],
+          farmer: { id: l.seller, name: 'Farmer', about: '' },
+        })
       } catch (e) {
         if (!aborted) setError('Failed to load product')
       } finally {
@@ -77,8 +88,16 @@ export default function ProductDetail() {
 
             <p className="mt-4 text-gray-700">{product.description}</p>
 
-            <div className="mt-6 flex gap-3">
-              <button onClick={()=>dispatch({ type:'ADD', item: { id: product.id, name: product.name, price: product.price } })} className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Add to Cart</button>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <label className="text-sm text-gray-600">Quantity (kg)</label>
+              <input type="number" min="1" max={product.qtyAvailable || undefined} value={qty} onChange={(e)=>setQty(Number(e.target.value))} className="w-24 rounded-lg border border-gray-300 px-2 py-1" />
+              <button onClick={()=>dispatch({ type:'ADD', item: { id: product.id, name: product.name, price: product.price }, quantity: qty })} className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Add to Cart</button>
+              <button onClick={async ()=>{
+                try {
+                  await apiAuthPost('/api/orders', { listing: product.id, quantityKg: qty, pricePerKg: product.price, amount: product.price * qty, paymentMethod: 'cod' })
+                  alert('Order placed!')
+                } catch (e) { alert('Failed to place order') }
+              }} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-50">Buy Now (COD)</button>
               <Link to="/buyer/cart" className="rounded-lg border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-50">Go to Cart</Link>
             </div>
 

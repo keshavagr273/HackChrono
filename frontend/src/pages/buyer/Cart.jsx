@@ -1,6 +1,7 @@
 import BuyerNav from '../../components/BuyerNav'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
+import { apiAuthPost } from '../../lib/api'
 
 export default function Cart() {
   const { state, dispatch, totals } = useCart()
@@ -38,7 +39,16 @@ export default function Cart() {
                 <span>₹{totals.subtotal.toFixed(2)}</span>
               </div>
               <div className="mt-4">
-                <Link to="/buyer/checkout" className="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Checkout</Link>
+                <Link to="/buyer/checkout" className="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Checkout (Online)</Link>
+                <button onClick={async ()=>{
+                  try {
+                    for (const i of state.items) {
+                      await apiAuthPost('/api/orders', { listing: i.id, quantityKg: i.quantity, pricePerKg: i.price, amount: i.price * i.quantity, paymentMethod: 'cod' })
+                    }
+                    alert('Order(s) placed with Cash on Delivery')
+                    dispatch({ type:'CLEAR' })
+                  } catch (e) { alert('Failed to place COD orders') }
+                }} className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-50">Order with COD</button>
               </div>
             </div>
           </div>
