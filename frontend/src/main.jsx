@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
+import { CartProvider } from './context/CartContext'
+import Market from './pages/buyer/Market'
+import ProductDetail from './pages/buyer/ProductDetail'
+import Cart from './pages/buyer/Cart'
+import Checkout from './pages/buyer/Checkout'
+import Orders from './pages/buyer/Orders'
 
 function BuyerDashboard() {
   return <div className="mx-auto max-w-5xl px-4 py-10">
@@ -84,13 +90,20 @@ function SellerDashboard() {
 
 const router = createBrowserRouter([
   { path: '/', element: <App /> },
-  { path: '/buyer', element: <BuyerDashboard /> },
+  { path: '/buyer', element: <Market /> },
+  { path: '/buyer/market', element: <Market /> },
+  { path: '/buyer/product/:id', element: <ProductDetail /> },
+  { path: '/buyer/cart', element: <Cart /> },
+  { path: '/buyer/checkout', element: <Checkout /> },
+  { path: '/buyer/orders', element: <Orders /> },
   { path: '/seller', element: <SellerDashboard /> },
   { path: '/seller/analytics', element: <SellerAnalytics /> },
 ])
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <CartProvider>
+      <RouterProvider router={router} />
+    </CartProvider>
   </StrictMode>,
 )
