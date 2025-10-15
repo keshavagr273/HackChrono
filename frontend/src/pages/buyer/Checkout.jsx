@@ -34,7 +34,7 @@ export default function Checkout() {
                 <input required placeholder="Expiry MM/YY" className="rounded-lg border border-gray-300 px-3 py-2" />
                 <input required placeholder="CVV" className="rounded-lg border border-gray-300 px-3 py-2" />
               </div>
-              <button className="mt-4 rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Pay Now</button>
+              <button className="mt-4 rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">Pay Now</button>
             </div>
           </form>
 

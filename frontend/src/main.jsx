@@ -4,6 +4,10 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
+// Auth pages
+import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
+
 // Buyer pages
 import { CartProvider } from './context/CartContext'
 import Market from './pages/buyer/Market'
@@ -22,6 +26,10 @@ import SellerLayout from './pages/seller/Layout.jsx'
 
 const router = createBrowserRouter([
   { path: '/', element: <App /> },
+
+  // Auth routes
+  { path: '/login', element: <Login /> },
+  { path: '/signup', element: <Signup /> },
 
   // Buyer routes
   { path: '/buyer', element: <Market /> },

@@ -14,7 +14,7 @@ export default function Cart() {
         {state.items.length === 0 ? (
           <div className="mt-6 rounded-xl border border-dashed border-gray-300 p-8 text-center">
             <p className="text-gray-600">Your cart is empty.</p>
-            <Link to="/buyer/market" className="mt-3 inline-block rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Browse Products</Link>
+            <Link to="/buyer/market" className="mt-3 inline-block rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">Browse Products</Link>
           </div>
         ) : (
           <div className="mt-6 grid gap-6 md:grid-cols-3">
@@ -39,7 +39,7 @@ export default function Cart() {
                 <span>₹{totals.subtotal.toFixed(2)}</span>
               </div>
               <div className="mt-4">
-                <Link to="/buyer/checkout" className="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Checkout (Online)</Link>
+                <Link to="/buyer/checkout" className="inline-flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700">Checkout (Online)</Link>
                 <button onClick={async ()=>{
                   try {
                     for (const i of state.items) {

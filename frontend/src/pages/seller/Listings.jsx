@@ -1,29 +1,92 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback, memo } from 'react'
+import { Link } from 'react-router-dom'
+
+// Memoized ProductCard component to prevent unnecessary re-renders
+const ProductCard = memo(({ product }) => {
+  const totalValue = useMemo(() => {
+    return (product.pricePerKg * product.quantityKg).toLocaleString()
+  }, [product.pricePerKg, product.quantityKg])
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-gray-200 hover:shadow-xl transition-all duration-200">
+      <div className="p-6">
+        <div className="mb-4 flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-800">{product.title}</h3>
+            <p className="mt-1 text-sm text-gray-600">{product.category || 'Uncategorized'}</p>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="rounded-full bg-green-500 px-3 py-1 text-xs font-bold text-white">
+              ₹{product.pricePerKg}/kg
+            </span>
+            <span className="mt-1 text-xs text-gray-500">{product.quantityKg} kg</span>
+          </div>
+        </div>
+        
+        <div className="space-y-2 text-sm text-gray-600">
+          <div className="flex items-center">
+            <svg className="mr-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {product.location || 'Location not specified'}
+          </div>
+          <div className="flex items-center">
+            <svg className="mr-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+            Total Value: ₹{totalValue}
+          </div>
+        </div>
+
+        {product.description && (
+          <p className="mt-3 text-sm text-gray-600 line-clamp-2">{product.description}</p>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors duration-200">
+            Edit
+          </button>
+          <button className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+            View
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+})
 
 export default function SellerListings() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
 
-  const api = (path) => {
+  const api = useCallback((path) => {
     let base = import.meta.env.VITE_API_URL
     if (!base || !/^https?:\/\//.test(base) || base.includes('localhost:517')) {
       base = 'http://localhost:5000'
     }
     return `${base}${path}`
-  }
+  }, [])
+
   const token = localStorage.getItem('token')
 
-  async function fetchMine() {
+  const fetchMine = useCallback(async () => {
     try {
       const res = await fetch(api('/api/listings/mine/self'), { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Failed to load')
       setItems(data)
     } catch (e) { setError(e.message) }
-  }
+  }, [api, token])
 
-  useEffect(() => { fetchMine() }, [])
+  useEffect(() => { fetchMine() }, [fetchMine])
+
+  // Memoize expensive calculations
+  const totalValue = useMemo(() => {
+    return items.reduce((sum, item) => sum + (item.pricePerKg * item.quantityKg), 0)
+  }, [items])
 
   async function onSubmit(e) {
     e.preventDefault(); setError(''); setLoading(true)
@@ -52,37 +115,207 @@ export default function SellerListings() {
       const ct = res.headers.get('content-type') || ''
       const data = ct.includes('application/json') ? await res.json() : await res.text()
       if (!res.ok) throw new Error(data.message || 'Create failed')
-      form.reset(); fetchMine()
+      form.reset(); fetchMine(); setShowForm(false)
     } catch (e) { setError(e.message) } finally { setLoading(false) }
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Products / Listings</h1>
-        <a href="/seller" className="text-sm text-brand-700 hover:text-brand-800">Back to Dashboard</a>
-      </div>
-      <form onSubmit={onSubmit} className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-gray-100 p-6 shadow-sm">
-        <input name="title" required placeholder="Crop name" className="rounded-lg border border-gray-300 px-3 py-2" />
-        <input name="pricePerKg" required type="number" min="0" placeholder="Price per kg (₹)" className="rounded-lg border border-gray-300 px-3 py-2" />
-        <input name="quantityKg" required type="number" min="0" placeholder="Quantity (kg)" className="rounded-lg border border-gray-300 px-3 py-2" />
-        <input name="location" placeholder="Location" className="rounded-lg border border-gray-300 px-3 py-2" />
-        <input name="category" placeholder="Category" className="rounded-lg border border-gray-300 px-3 py-2" />
-        <textarea name="description" placeholder="Description" className="col-span-2 h-24 rounded-lg border border-gray-300 px-3 py-2" />
-        <input name="image" type="file" accept="image/*" className="col-span-2 rounded-lg border border-gray-300 px-3 py-2" />
-        {error && <p className="col-span-2 text-sm text-red-600">{error}</p>}
-        <button disabled={loading} className="col-span-2 rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700 disabled:opacity-50">{loading?'Saving...':'Add Product'}</button>
-      </form>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {items.map((p) => (
-          <div key={p._id} className="rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <p className="font-semibold">{p.title}</p>
-            <p className="text-sm text-gray-600">₹{p.pricePerKg}/kg • {p.quantityKg} kg</p>
-            <p className="mt-2 text-xs text-gray-500">{p.location}</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Product Listings</h1>
+            <p className="mt-2 text-gray-600">Manage your agricultural products and track their performance</p>
           </div>
-        ))}
-        {items.length===0 && <p className="text-sm text-gray-500">No listings yet.</p>}
+          <div className="flex gap-3">
+            <Link to="/seller" className="inline-flex items-center rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Dashboard
+            </Link>
+            <button 
+              onClick={() => setShowForm(!showForm)}
+              className="inline-flex items-center rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors duration-200"
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              {showForm ? 'Cancel' : 'Add New Product'}
+            </button>
+          </div>
+        </div>
+
+        {/* Add Product Form */}
+        {showForm && (
+          <div className="mb-8 rounded-2xl bg-white p-8 shadow-lg border border-gray-200">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Add New Product</h2>
+              <p className="mt-1 text-gray-600">Fill in the details to list your agricultural product</p>
+            </div>
+            
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                  <input 
+                    name="title" 
+                    required 
+                    placeholder="e.g., Organic Wheat, Fresh Tomatoes" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price per kg (₹) *</label>
+                  <input 
+                    name="pricePerKg" 
+                    required 
+                    type="number" 
+                    min="0" 
+                    step="0.01"
+                    placeholder="25.00" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Quantity (kg) *</label>
+                  <input 
+                    name="quantityKg" 
+                    required 
+                    type="number" 
+                    min="0" 
+                    step="0.1"
+                    placeholder="100" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input 
+                    name="location" 
+                    placeholder="e.g., Punjab, India" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select 
+                    name="category" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                  >
+                    <option value="">Select Category</option>
+                    <option value="🌾 Grains">🌾 Grains</option>
+                    <option value="🥬 Vegetables">🥬 Vegetables</option>
+                    <option value="🌿 Oilseeds">🌿 Oilseeds</option>
+                    <option value="🍎 Fruits">🍎 Fruits</option>
+                    <option value="🌱 Spices">🌱 Spices</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+                  <input 
+                    name="image" 
+                    type="file" 
+                    accept="image/*" 
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700" 
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea 
+                  name="description" 
+                  placeholder="Describe your product, farming methods, quality, etc." 
+                  rows={4}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-50 p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4">
+                <button 
+                  type="submit"
+                  disabled={loading} 
+                  className="flex-1 rounded-lg bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    'Add Product'
+                  )}
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+      </form>
+          </div>
+        )}
+
+        {/* Products Grid */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Your Products ({items.length})</h2>
+            {items.length > 0 && (
+              <div className="text-sm text-gray-600">
+                Total Value: ₹{totalValue.toLocaleString()}
+              </div>
+            )}
+          </div>
+
+          {items.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                  <svg className="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No products listed yet</h3>
+              <p className="text-gray-600 mb-6">Start by adding your first agricultural product to the marketplace</p>
+              <button 
+                onClick={() => setShowForm(true)}
+                className="inline-flex items-center rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 transition-all duration-300"
+              >
+                <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Your First Product
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((p) => (
+                <ProductCard key={p._id} product={p} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
