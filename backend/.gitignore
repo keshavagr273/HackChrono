@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build and cache
+dist/
+build/
+.cache/
+.temp/
+
+# Editor folders and files
+.vscode/
+.idea/
+*.swp
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Optional: lock files (if you prefer only one package manager)
+# yarn.lock
+# pnpm-lock.yaml
