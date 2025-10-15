@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import BuyerNav from '../../components/BuyerNav'
 import { Link } from 'react-router-dom'
+import { apiGet } from '../../lib/api'
 
 const MOCK_PRODUCTS = [
   { id: 'p1', name: 'Fresh Tomatoes', price: 20, unit: 'kg', location: 'Nashik', category: 'Vegetables', qtyAvailable: 250, farmer: { id: 'f1', name: 'Anand Farms' }, image: 'https://images.unsplash.com/photo-1546470427-226ed66f7e1e?q=80&w=800&auto=format&fit=crop' },
@@ -15,14 +16,41 @@ export default function Market() {
   const [location, setLocation] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
+  const [items, setItems] = useState(MOCK_PRODUCTS)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let aborted = false
+    async function load() {
+      try {
+        setLoading(true)
+        setError('')
+        const qs = new URLSearchParams()
+        if (q) qs.set('q', q)
+        if (category) qs.set('category', category)
+        if (location) qs.set('location', location)
+        if (maxPrice) qs.set('maxPrice', maxPrice)
+        const data = await apiGet(`/api/buyer/products?${qs.toString()}`)
+        if (!aborted) setItems(data)
+      } catch (e) {
+        if (!aborted) setError('Failed to load products')
+      } finally {
+        if (!aborted) setLoading(false)
+      }
+    }
+    load()
+    return () => { aborted = true }
+  }, [q, category, location, maxPrice])
+
   const filtered = useMemo(() => {
-    return MOCK_PRODUCTS.filter(p => (
+    return items.filter(p => (
       (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.farmer.name.toLowerCase().includes(q.toLowerCase())) &&
       (!category || p.category === category) &&
       (!location || p.location.toLowerCase().includes(location.toLowerCase())) &&
       (!maxPrice || p.price <= Number(maxPrice))
     ))
-  }, [q, category, location, maxPrice])
+  }, [items, q, category, location, maxPrice])
 
   return (
     <div className="min-h-full">
@@ -45,7 +73,9 @@ export default function Market() {
           </div>
         </div>
 
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {loading && <div className="col-span-full text-center text-gray-600">Loading…</div>}
           {filtered.map(p => (
             <Link key={p.id} to={`/buyer/product/${p.id}`} className="group overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
               <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
