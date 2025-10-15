@@ -1,7 +1,7 @@
 import BuyerNav from '../../components/BuyerNav'
 import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
-import { apiAuthPost } from '../../lib/api'
+import { apiAuthDelete, apiAuthPatch, apiAuthPost } from '../../lib/api'
 
 export default function Cart() {
   const { state, dispatch, totals } = useCart()
@@ -26,8 +26,8 @@ export default function Cart() {
                     <p className="text-sm text-gray-600">₹{i.price} x</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="number" min="1" value={i.quantity} onChange={e=>dispatch({ type:'SET_QTY', id: i.id, quantity: Number(e.target.value) })} className="w-20 rounded-lg border border-gray-300 px-2 py-1" />
-                    <button onClick={()=>dispatch({ type:'REMOVE', id: i.id })} className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Remove</button>
+                    <input type="number" min="1" value={i.quantity} onChange={async (e)=>{ const q = Number(e.target.value); dispatch({ type:'SET_QTY', id: i.id, quantity: q }); try { await apiAuthPatch(`/api/cart/items/${i.id}`, { quantityKg: q }) } catch {} }} className="w-20 rounded-lg border border-gray-300 px-2 py-1" />
+                    <button onClick={async ()=>{ dispatch({ type:'REMOVE', id: i.id }); try { await apiAuthDelete(`/api/cart/items/${i.id}`) } catch {} }} className="rounded-md border border-gray-300 px-3 py-1 text-sm hover:bg-gray-50">Remove</button>
                   </div>
                 </div>
               ))}
@@ -43,8 +43,9 @@ export default function Cart() {
                 <button onClick={async ()=>{
                   try {
                     for (const i of state.items) {
-                      await apiAuthPost('/api/orders', { listing: i.id, quantityKg: i.quantity, pricePerKg: i.price, amount: i.price * i.quantity, paymentMethod: 'cod' })
+                      await apiAuthPost('/api/orders', { listingId: i.id, quantityKg: i.quantity })
                     }
+                    try { await apiAuthDelete('/api/cart') } catch {}
                     alert('Order(s) placed with Cash on Delivery')
                     dispatch({ type:'CLEAR' })
                   } catch (e) { alert('Failed to place COD orders') }

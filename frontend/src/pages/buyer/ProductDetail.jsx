@@ -91,10 +91,15 @@ export default function ProductDetail() {
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <label className="text-sm text-gray-600">Quantity (kg)</label>
               <input type="number" min="1" max={product.qtyAvailable || undefined} value={qty} onChange={(e)=>setQty(Number(e.target.value))} className="w-24 rounded-lg border border-gray-300 px-2 py-1" />
-              <button onClick={()=>dispatch({ type:'ADD', item: { id: product.id, name: product.name, price: product.price }, quantity: qty })} className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Add to Cart</button>
               <button onClick={async ()=>{
                 try {
-                  await apiAuthPost('/api/orders', { listing: product.id, quantityKg: qty, pricePerKg: product.price, amount: product.price * qty, paymentMethod: 'cod' })
+                  await apiAuthPost('/api/cart/items', { listingId: product.id, quantityKg: qty })
+                } catch {}
+                dispatch({ type:'ADD', item: { id: product.id, name: product.name, price: product.price }, quantity: qty })
+              }} className="rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">Add to Cart</button>
+              <button onClick={async ()=>{
+                try {
+                  await apiAuthPost('/api/orders', { listingId: product.id, quantityKg: qty })
                   alert('Order placed!')
                 } catch (e) { alert('Failed to place order') }
               }} className="rounded-lg border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-50">Buy Now (COD)</button>

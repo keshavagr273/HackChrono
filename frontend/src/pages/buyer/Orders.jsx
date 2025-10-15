@@ -13,7 +13,7 @@ export default function Orders() {
       try {
         setLoading(true)
         setError('')
-        const data = await apiAuthGet('/api/orders')
+        const data = await apiAuthGet('/api/orders/buyer')
         if (!aborted) setOrders(data)
       } catch (e) {
         if (!aborted) setError('Failed to load orders')

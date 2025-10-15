@@ -32,4 +32,30 @@ export async function apiAuthPost(path, body) {
   return res.json()
 }
 
+export async function apiAuthPatch(path, body) {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`${getApiBase()}${path}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function apiAuthDelete(path) {
+  const token = localStorage.getItem('token')
+  const res = await fetch(`${getApiBase()}${path}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 

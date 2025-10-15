@@ -11,7 +11,7 @@ export default function Checkout() {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         <h1 className="text-2xl font-bold">Checkout</h1>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
-          <form className="space-y-3 md:col-span-2" onSubmit={async (e)=>{e.preventDefault(); try { for (const i of state.items) { await apiAuthPost('/api/orders', { listing: i.id, quantityKg: i.quantity, pricePerKg: i.price, amount: i.price * i.quantity, paymentMethod: 'online' }) } alert('Payment processed and orders placed'); dispatch({ type:'CLEAR' }) } catch (err) { alert('Failed to place order(s)') } }}>
+          <form className="space-y-3 md:col-span-2" onSubmit={async (e)=>{e.preventDefault(); try { for (const i of state.items) { await apiAuthPost('/api/orders', { listingId: i.id, quantityKg: i.quantity, paymentId: 'test-payment' }) } try { await apiAuthDelete('/api/cart') } catch {} alert('Payment processed and orders placed'); dispatch({ type:'CLEAR' }) } catch (err) { alert('Failed to place order(s)') } }}>
             <div className="rounded-2xl border border-gray-100 p-5 shadow-sm">
               <h2 className="text-lg font-semibold">Delivery Address</h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
