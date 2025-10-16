@@ -8,6 +8,7 @@ import ordersRoutes from './routes/orders.js'
 import sellerRoutes from './routes/seller.js'
 import buyerRoutes from './routes/buyer.js'
 import cartRoutes from './routes/cart.js'
+import stripeRoutes from './routes/stripe.js'
 
 dotenv.config()
 
@@ -38,6 +39,7 @@ app.use('/api/orders', ordersRoutes)
 app.use('/api/seller', sellerRoutes)
 app.use('/api/buyer', buyerRoutes)
 app.use('/api/cart', cartRoutes)
+app.use('/api/payments', stripeRoutes)
 
 const PORT = Number(process.env.PORT || 5000)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/digikhet'
