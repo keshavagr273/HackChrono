@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo, useCallback, memo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 // Memoized ProductCard component to prevent unnecessary re-renders
-const ProductCard = memo(({ product }) => {
+const ProductCard = memo(({ product, onEdit, onView }) => {
   const totalValue = useMemo(() => {
     return (product.pricePerKg * product.quantityKg).toLocaleString()
   }, [product.pricePerKg, product.quantityKg])
@@ -44,10 +44,10 @@ const ProductCard = memo(({ product }) => {
         )}
 
         <div className="mt-4 flex gap-2">
-          <button className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors duration-200">
+          <button onClick={()=>onEdit(product)} className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors duration-200">
             Edit
           </button>
-          <button className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+          <button onClick={()=>onView(product)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors duration-200">
             View
           </button>
         </div>
@@ -57,10 +57,12 @@ const ProductCard = memo(({ product }) => {
 })
 
 export default function SellerListings() {
+  const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
 
   const api = useCallback((path) => {
     let base = import.meta.env.VITE_API_URL
@@ -107,15 +109,15 @@ export default function SellerListings() {
         const buf = await imageFile.arrayBuffer()
         body.image = `data:${imageFile.type};base64,${btoa(String.fromCharCode(...new Uint8Array(buf)))}`
       }
-      const res = await fetch(api('/api/listings'), {
-        method: 'POST',
+      const res = await fetch(editing ? api(`/api/listings/${editing._id}`) : api('/api/listings'), {
+        method: editing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body)
       })
       const ct = res.headers.get('content-type') || ''
       const data = ct.includes('application/json') ? await res.json() : await res.text()
       if (!res.ok) throw new Error(data.message || 'Create failed')
-      form.reset(); fetchMine(); setShowForm(false)
+      form.reset(); fetchMine(); setShowForm(false); setEditing(null)
     } catch (e) { setError(e.message) } finally { setLoading(false) }
   }
 
@@ -162,6 +164,7 @@ export default function SellerListings() {
                   <input 
                     name="title" 
                     required 
+                    defaultValue={editing?.title || ''}
                     placeholder="e.g., Organic Wheat, Fresh Tomatoes" 
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
                   />
@@ -174,6 +177,7 @@ export default function SellerListings() {
                     type="number" 
                     min="0" 
                     step="0.01"
+                    defaultValue={editing?.pricePerKg ?? ''}
                     placeholder="25.00" 
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
                   />
@@ -186,6 +190,7 @@ export default function SellerListings() {
                     type="number" 
                     min="0" 
                     step="0.1"
+                    defaultValue={editing?.quantityKg ?? ''}
                     placeholder="100" 
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
                   />
@@ -194,6 +199,7 @@ export default function SellerListings() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                   <input 
                     name="location" 
+                    defaultValue={editing?.location || ''}
                     placeholder="e.g., Punjab, India" 
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
                   />
@@ -202,6 +208,7 @@ export default function SellerListings() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                   <select 
                     name="category" 
+                    defaultValue={editing?.category || ''}
                     className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
                   >
                     <option value="">Select Category</option>
@@ -228,6 +235,7 @@ export default function SellerListings() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea 
                   name="description" 
+                  defaultValue={editing?.description || ''}
                   placeholder="Describe your product, farming methods, quality, etc." 
                   rows={4}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100" 
@@ -261,12 +269,12 @@ export default function SellerListings() {
                       Saving...
                     </div>
                   ) : (
-                    'Add Product'
+                    editing ? 'Save Changes' : 'Add Product'
                   )}
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); setEditing(null); }}
                   className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50"
                 >
                   Cancel
@@ -311,7 +319,18 @@ export default function SellerListings() {
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p) => (
-                <ProductCard key={p._id} product={p} />
+                <ProductCard 
+                  key={p._id} 
+                  product={p} 
+                  onEdit={(prod)=>{
+                    setEditing(prod)
+                    setShowForm(true)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  onView={(prod)=>{
+                    navigate(`/buyer/product/${prod._id}`)
+                  }}
+                />
               ))}
             </div>
           )}

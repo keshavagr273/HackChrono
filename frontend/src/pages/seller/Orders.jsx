@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { listNegotiations, counterOffer, acceptOffer, declineOffer, subscribeNegotiations } from '../../context/Negotiation'
 
 export default function SellerOrders() {
+  const [offers, setOffers] = useState([])
+  useEffect(() => {
+    const apply = () => setOffers(listNegotiations({}))
+    apply()
+    const unsub = subscribeNegotiations(apply)
+    return unsub
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -17,6 +26,62 @@ export default function SellerOrders() {
             </svg>
             Back to Dashboard
           </Link>
+        </div>
+
+        {/* Offers Inbox */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Offers Inbox</h2>
+          <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-6">
+            {/* Pending */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Pending</h3>
+              {offers.filter(o=>o.status==='pending').length===0 ? (
+                <p className="text-gray-600">No pending offers.</p>
+              ) : (
+                <div className="space-y-3">
+                  {offers.filter(o=>o.status==='pending').map(o => (
+                    <div key={o.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                      <div>
+                        <p className="font-semibold text-gray-900">{o.productName} • {o.quantityKg} kg</p>
+                        <p className="text-sm text-gray-600">Buyer: {o.buyerName} • Offer: ₹{o.offerPricePerKg}/kg • Status: {o.status}</p>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {o.updates.map((u, idx) => (
+                            <span key={idx} className="mr-2">[{new Date(u.at).toLocaleTimeString()} {u.by}: {u.type}{u.price?` ₹${u.price}`:''}]</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={()=>{ counterOffer(o.id, { by: 'seller', price: o.offerPricePerKg + 1 }); }} className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Counter +₹1</button>
+                        <button onClick={()=>{ acceptOffer(o.id); }} className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700">Accept</button>
+                        <button onClick={()=>{ declineOffer(o.id); }} className="rounded-lg border border-red-300 text-red-600 px-3 py-1.5 text-sm hover:bg-red-50">Decline</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Completed */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Completed</h3>
+              {offers.filter(o=>o.status!=='pending').length===0 ? (
+                <p className="text-gray-600">No completed offers.</p>
+              ) : (
+                <div className="space-y-3">
+                  {offers.filter(o=>o.status!=='pending').map(o => (
+                    <div key={o.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-gray-50">
+                      <div>
+                        <p className="font-semibold text-gray-900">{o.productName} • {o.quantityKg} kg</p>
+                        <p className="text-sm text-gray-600">Buyer: {o.buyerName} • Final: ₹{o.offerPricePerKg}/kg • {o.status.toUpperCase()}</p>
+                      </div>
+                      <div className="text-sm font-medium {o.status==='accepted'?'text-green-700':'text-red-600'}">
+                        {o.status === 'accepted' ? 'Accepted' : 'Declined'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Orders Section */}
