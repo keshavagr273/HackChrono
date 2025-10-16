@@ -8,9 +8,14 @@ import ordersRoutes from './routes/orders.js'
 import sellerRoutes from './routes/seller.js'
 import buyerRoutes from './routes/buyer.js'
 import cartRoutes from './routes/cart.js'
+<<<<<<< HEAD
 import stripeRoutes from './routes/stripe.js'
 import http from 'http'
 import { Server as SocketIOServer } from 'socket.io'
+=======
+import aiRoutes from './routes/ai.js'
+import voiceRoutes from './routes/voice.js'
+>>>>>>> 0ea13c07944070831161f165f02b027a906e89e8
 
 dotenv.config()
 
@@ -65,7 +70,12 @@ app.use('/api/orders', ordersRoutes)
 app.use('/api/seller', sellerRoutes)
 app.use('/api/buyer', buyerRoutes)
 app.use('/api/cart', cartRoutes)
+<<<<<<< HEAD
 app.use('/api/payments', stripeRoutes)
+=======
+app.use('/api/ai', aiRoutes)
+app.use('/api/voice', voiceRoutes)
+>>>>>>> 0ea13c07944070831161f165f02b027a906e89e8
 
 const PORT = Number(process.env.PORT || 5000)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/digikhet'

@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import Logo from '../../components/Logo'
+import VoiceAssistant from '../../components/VoiceAssistant'
 
 export default function SellerLayout() {
   const { pathname } = useLocation()
@@ -30,6 +31,9 @@ export default function SellerLayout() {
       <main>
         <Outlet />
       </main>
+      
+      {/* Voice Assistant - Available on all seller pages */}
+      <VoiceAssistant />
     </div>
   )
 }
