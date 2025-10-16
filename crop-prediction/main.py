@@ -1,8 +1,6 @@
-from pydantic import BaseModel
-from fastapi import FastAPI, Request
+from pydantic import BaseModel, ConfigDict
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import date
 from utils import pred_crop, pred_rainfall, pred_temp_hum
 
 app = FastAPI()
@@ -22,6 +20,8 @@ async def root():
 
 
 class Inputs(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    
     nitrogen: float
     phosphorous: float
     potassium: float

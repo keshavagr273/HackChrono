@@ -1,0 +1,23 @@
+# Minimal requirements for the crop prediction API
+# Compatible with Python 3.8-3.12
+
+# Core API Framework
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+
+# Data Processing
+numpy==1.26.2
+pandas==2.1.4
+
+# Machine Learning
+torch==2.1.1
+scikit-learn==1.3.2
+
+# HTTP Requests
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+h11==0.14.0
+
