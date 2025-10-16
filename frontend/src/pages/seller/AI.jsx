@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { apiAuthPost } from '../../lib/api'
 
 export default function SellerAI() {
+  // Disease Detection state
+  const [diseaseImage, setDiseaseImage] = useState(null)
+  const [diseasePreview, setDiseasePreview] = useState(null)
+  const [diseaseResult, setDiseaseResult] = useState(null)
+  const [diseaseLoading, setDiseaseLoading] = useState(false)
+  const [diseaseError, setDiseaseError] = useState(null)
+
   // Crop Recommendation state
   const [cropForm, setCropForm] = useState({
     nitrogen: '',
@@ -27,6 +34,43 @@ export default function SellerAI() {
   const [yieldResult, setYieldResult] = useState(null)
   const [yieldLoading, setYieldLoading] = useState(false)
   const [yieldError, setYieldError] = useState(null)
+
+  // Handle Disease Detection
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setDiseaseImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setDiseasePreview(reader.result)
+      }
+      reader.readAsDataURL(file)
+      setDiseaseError(null)
+      setDiseaseResult(null)
+    }
+  }
+
+  const handleDiseaseDetection = async () => {
+    if (!diseaseImage) {
+      setDiseaseError('Please upload an image first')
+      return
+    }
+
+    setDiseaseLoading(true)
+    setDiseaseError(null)
+    setDiseaseResult(null)
+
+    try {
+      const response = await apiAuthPost('/api/ai/disease-detection', {
+        image: diseasePreview
+      })
+      setDiseaseResult(response)
+    } catch (error) {
+      setDiseaseError(error.message || 'Failed to detect disease')
+    } finally {
+      setDiseaseLoading(false)
+    }
+  }
 
   // Handle Crop Recommendation
   const handleCropRecommendation = async (e) => {
@@ -88,28 +132,90 @@ export default function SellerAI() {
               </div>
               
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Plant Image</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Upload Plant Leaf Image</label>
                 <div className="relative">
                   <input 
                     type="file" 
                     accept="image/*" 
+                    onChange={handleImageUpload}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
                   />
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-gray-50 p-6 text-center">
-                <div className="mb-4">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+              {diseasePreview ? (
+                <div className="rounded-2xl bg-gray-50 p-4 mb-4">
+                  <img 
+                    src={diseasePreview} 
+                    alt="Preview" 
+                    className="mx-auto max-h-64 rounded-lg object-contain"
+                  />
                 </div>
-                <p className="text-gray-600">Coming Soon: AI-powered pest and disease analysis</p>
-              </div>
+              ) : (
+                <div className="rounded-2xl bg-gray-50 p-6 text-center mb-4">
+                  <div className="mb-4">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600">Upload a clear image of the plant leaf</p>
+                </div>
+              )}
 
-              <button disabled className="mt-6 w-full rounded-xl bg-gray-400 px-6 py-3 text-white font-semibold cursor-not-allowed">
-                Analyze Image (Coming Soon)
+              <button 
+                onClick={handleDiseaseDetection}
+                disabled={!diseaseImage || diseaseLoading}
+                className="w-full rounded-xl bg-red-600 px-6 py-3 text-white font-semibold shadow-lg hover:shadow-xl hover:bg-red-700 transition-all duration-300 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {diseaseLoading ? 'Analyzing...' : 'Analyze Image'}
               </button>
+
+              {diseaseError && (
+                <div className="mt-4 rounded-xl bg-red-50 p-4 text-red-700">
+                  {diseaseError}
+                </div>
+              )}
+
+              {diseaseResult && (
+                <div className="mt-4 rounded-xl bg-red-50 p-6 border-2 border-red-200">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Detection Result:</h3>
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600">Plant Type</p>
+                      <p className="text-xl font-bold text-gray-900">{diseaseResult.plant}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <div className="bg-white rounded-lg p-4">
+                      <p className="text-sm text-gray-600">Detected Condition</p>
+                      <p className={`text-2xl font-bold ${diseaseResult.disease.toLowerCase().includes('healthy') ? 'text-green-600' : 'text-red-600'}`}>
+                        {diseaseResult.disease}
+                      </p>
+                      <div className="mt-2 flex items-center">
+                        <span className="text-sm text-gray-600 mr-2">Confidence:</span>
+                        <span className="text-lg font-semibold text-purple-600">{diseaseResult.confidence}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-red-200 pt-4">
+                    <h4 className="font-bold text-gray-900 mb-2">💊 Treatment Recommendation:</h4>
+                    <p className="text-gray-700 bg-white rounded-lg p-3">
+                      {diseaseResult.treatment}
+                    </p>
+                  </div>
+
+                  {diseaseResult.severity && (
+                    <div className="mt-4 bg-white rounded-lg p-3">
+                      <span className="text-sm font-semibold text-gray-700">Severity: </span>
+                      <span className={`font-bold ${diseaseResult.color === 'green' ? 'text-green-600' : diseaseResult.color === 'red' ? 'text-red-600' : 'text-orange-600'}`}>
+                        {diseaseResult.severity}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

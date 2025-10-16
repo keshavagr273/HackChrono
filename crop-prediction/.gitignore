@@ -1,4 +1,10 @@
 .api_key.txt
+
+# Large model files (download separately - see MODEL_DOWNLOAD.md)
+plant_disease_model_1.pt
+*.pt
+*.pth
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

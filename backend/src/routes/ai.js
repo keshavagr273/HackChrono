@@ -173,5 +173,53 @@ function generateRecommendations(score, rainfall, fertilizer) {
   return recommendations
 }
 
+// Plant Disease Detection endpoint
+router.post('/disease-detection', requireAuth, async (req, res) => {
+  try {
+    const { image } = req.body
+
+    if (!image) {
+      return res.status(400).json({ error: 'Image is required' })
+    }
+
+    // Call the Python Disease Detection service
+    const diseaseApiUrl = process.env.DISEASE_API_URL || 'http://localhost:8002'
+    
+    try {
+      // Send base64 image directly to Python service
+      const response = await fetch(`${diseaseApiUrl}/detect-base64/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: image
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        return res.status(response.status).json({ 
+          error: errorData.detail || 'Failed to detect disease' 
+        })
+      }
+
+      const data = await response.json()
+      res.json(data)
+    } catch (fetchError) {
+      console.error('Disease detection service not available:', fetchError.message)
+      
+      // Fallback response
+      res.status(503).json({ 
+        error: 'Disease detection service is not available. Please ensure the ML service is running on port 8002.',
+        note: 'Start the service with: python start_disease_server.py'
+      })
+    }
+  } catch (error) {
+    console.error('Disease detection error:', error)
+    res.status(500).json({ error: 'Failed to process disease detection request' })
+  }
+})
+
 export default router
 
