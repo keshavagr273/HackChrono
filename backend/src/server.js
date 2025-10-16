@@ -8,10 +8,13 @@ import ordersRoutes from './routes/orders.js'
 import sellerRoutes from './routes/seller.js'
 import buyerRoutes from './routes/buyer.js'
 import cartRoutes from './routes/cart.js'
+import http from 'http'
+import { Server as SocketIOServer } from 'socket.io'
 
 dotenv.config()
 
 const app = express()
+const server = http.createServer(app)
 app.use(express.json({ limit: '10mb' }))
 
 // Allow multiple dev origins (e.g., Vite chooses 5173 or 5174)
@@ -27,6 +30,29 @@ app.use(
     credentials: true,
   })
 )
+
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return callback(null, true)
+      return callback(new Error('Not allowed by CORS'))
+    },
+    credentials: true,
+  }
+})
+
+io.on('connection', (socket) => {
+  socket.on('join', (room) => {
+    if (room) socket.join(room)
+  })
+  socket.on('neg:update', (payload) => {
+    io.to('negotiations').emit('neg:update', payload || { ts: Date.now() })
+  })
+  socket.on('neg:upsert', (payload) => {
+    if (payload && payload.item) io.to('negotiations').emit('neg:upsert', payload)
+  })
+})
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true })
@@ -44,7 +70,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/digikh
 
 async function start() {
   await mongoose.connect(MONGODB_URI)
-  app.listen(PORT, () => console.log(`API listening on ${PORT}`))
+  server.listen(PORT, () => console.log(`API + Socket.IO listening on ${PORT}`))
 }
 
 start().catch((err) => {

@@ -177,12 +177,6 @@ function CategoryGrid() {
                 </div>
                 <h3 className="text-lg font-bold text-gray-800 group-hover:text-gray-900">{c.name}</h3>
                 <p className="mt-2 text-sm text-gray-600">Premium quality from verified farmers</p>
-                <button className="mt-4 inline-flex items-center rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                  <span>View Listings</span>
-                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-        </button>
               </div>
             </div>
           ))}
@@ -454,7 +448,7 @@ function About() {
           <p className="mt-4 text-lg text-gray-600">Empowering farmers with technology and connecting them directly to markets</p>
         </div>
         
-        <div className="grid gap-12 md:grid-cols-2">
+        <div className="grid gap-12 max-w-3xl mx-auto">
           <div className="group relative overflow-hidden rounded-3xl bg-white p-8 shadow-2xl ring-1 ring-gray-200/50 hover:shadow-3xl transition-all duration-300 hover:scale-105">
             <div className="absolute inset-0 bg-green-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative">
@@ -467,55 +461,10 @@ function About() {
               <p className="text-lg text-gray-600 leading-relaxed">
                 We empower rural farmers with AI-driven insights and direct market access, improving productivity and securing better prices through transparency and fair trade. Our platform bridges the gap between traditional farming and modern technology.
               </p>
-              <div className="mt-8">
-                <button className="group/btn inline-flex items-center rounded-2xl bg-green-600 px-8 py-3 text-white font-semibold shadow-lg hover:shadow-xl hover:bg-green-700 transition-all duration-300 hover:scale-105">
-                  <span>Learn More</span>
-                  <svg className="ml-2 h-5 w-5 group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
-              </div>
+              <div className="mt-8"></div>
             </div>
           </div>
           
-          <div className="group relative overflow-hidden rounded-3xl bg-white p-8 shadow-2xl ring-1 ring-gray-200/50 hover:shadow-3xl transition-all duration-300 hover:scale-105">
-            <div className="absolute inset-0 bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="relative">
-              <div className="mb-6 text-center">
-                <h3 className="text-2xl font-bold text-gray-900">Platform Statistics</h3>
-                <p className="mt-2 text-gray-600">Growing community of farmers and buyers</p>
-              </div>
-              <div className="grid grid-cols-3 gap-6 text-center">
-                <div className="group/stat">
-                  <div className="mb-2 flex justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500 shadow-lg group-hover/stat:scale-110 transition-transform duration-300">
-                      <span className="text-xl">👨‍🌾</span>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-extrabold text-green-600 group-hover:text-green-700">10k+</p>
-                  <p className="text-sm font-medium text-gray-600">Active Farmers</p>
-                </div>
-                <div className="group/stat">
-                  <div className="mb-2 flex justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500 shadow-lg group-hover/stat:scale-110 transition-transform duration-300">
-                      <span className="text-xl">🛒</span>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-extrabold text-blue-600 group-hover:text-blue-700">2k+</p>
-                  <p className="text-sm font-medium text-gray-600">Verified Buyers</p>
-                </div>
-                <div className="group/stat">
-                  <div className="mb-2 flex justify-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500 shadow-lg group-hover/stat:scale-110 transition-transform duration-300">
-                      <span className="text-xl">💰</span>
-                    </div>
-                  </div>
-                  <p className="text-3xl font-extrabold text-purple-600 group-hover:text-purple-700">₹50cr+</p>
-                  <p className="text-sm font-medium text-gray-600">Total GMV</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
