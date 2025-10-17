@@ -15,7 +15,7 @@ export default function BuyerNav() {
             <NavLink to="/buyer/orders" className={({isActive})=>`text-gray-600 hover:text-gray-900 ${isActive?'text-gray-900 font-semibold':''}`}>My Orders</NavLink>
             <NavLink to="/buyer/cart" className={({isActive})=>`text-gray-600 hover:text-gray-900 ${isActive?'text-gray-900 font-semibold':''}`}>Cart</NavLink>
           </nav>
-          <Link to="/" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">Home</Link>
+          <Link to="/" className="rounded-lg border text-red-500 border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">Logout</Link>
         </div>
       </div>
     </header>

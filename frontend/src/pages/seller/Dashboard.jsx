@@ -1,4 +1,40 @@
+import { useState, useEffect } from 'react'
+import { apiAuthGet } from '../../lib/api'
+
 export default function SellerDashboard() {
+  const [stats, setStats] = useState({
+    activeListings: 0,
+    newOrders: 0,
+    revenue: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch dashboard stats
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const data = await apiAuthGet('/api/seller/summary')
+        setStats(data)
+      } catch (err) {
+        console.error('Failed to fetch stats:', err)
+        setError('Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-10">
@@ -7,6 +43,13 @@ export default function SellerDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Farmer Dashboard</h1>
           <p className="mt-2 text-lg text-gray-600">Welcome to your farming command center</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 text-red-700">
+            {error}
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="mb-8 grid gap-6 md:grid-cols-3">
@@ -20,7 +63,11 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Active Listings</p>
-                <p className="text-2xl font-bold text-gray-900">8</p>
+                {loading ? (
+                  <div className="h-8 w-16 animate-pulse bg-gray-200 rounded"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{stats.activeListings}</p>
+                )}
               </div>
             </div>
           </div>
@@ -35,7 +82,11 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">New Orders</p>
-                <p className="text-2xl font-bold text-gray-900">3</p>
+                {loading ? (
+                  <div className="h-8 w-16 animate-pulse bg-gray-200 rounded"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{stats.newOrders}</p>
+                )}
               </div>
             </div>
           </div>
@@ -50,7 +101,11 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Earnings</p>
-                <p className="text-2xl font-bold text-gray-900">₹82,450</p>
+                {loading ? (
+                  <div className="h-8 w-24 animate-pulse bg-gray-200 rounded"></div>
+                ) : (
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.revenue)}</p>
+                )}
               </div>
             </div>
           </div>

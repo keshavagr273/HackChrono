@@ -64,11 +64,17 @@ export default function SellerAI() {
       const response = await apiAuthPost('/api/ai/disease-detection', {
         image: diseasePreview
       })
-      setDiseaseResult(response)
+      
+      // Add 3-second delay before showing results
+      setTimeout(() => {
+        setDiseaseResult(response)
+        setDiseaseLoading(false)
+      }, 3000)
     } catch (error) {
-      setDiseaseError(error.message || 'Failed to detect disease')
-    } finally {
-      setDiseaseLoading(false)
+      setTimeout(() => {
+        setDiseaseError(error.message || 'Failed to detect disease')
+        setDiseaseLoading(false)
+      }, 3000)
     }
   }
 
@@ -98,11 +104,17 @@ export default function SellerAI() {
 
     try {
       const response = await apiAuthPost('/api/ai/yield-prediction', yieldForm)
-      setYieldResult(response)
+      
+      // Add 3-second delay before showing results
+      setTimeout(() => {
+        setYieldResult(response)
+        setYieldLoading(false)
+      }, 3000)
     } catch (error) {
-      setYieldError(error.message || 'Failed to predict crop yield')
-    } finally {
-      setYieldLoading(false)
+      setTimeout(() => {
+        setYieldError(error.message || 'Failed to predict crop yield')
+        setYieldLoading(false)
+      }, 3000)
     }
   }
 

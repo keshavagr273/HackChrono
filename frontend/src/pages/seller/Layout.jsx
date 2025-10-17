@@ -23,7 +23,7 @@ export default function SellerLayout() {
               {tab('/seller/analytics','Analytics')}
               {tab('/seller/listings','Listings')}
               {tab('/seller/orders','Orders')}
-              <Link to="/" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">Home</Link>
+              <Link to="/" className="rounded-lg text-red-500 border border-gray-300 px-3 py-1.5 text-sm font-medium hover:bg-gray-50">Logout</Link>
             </nav>
           </div>
         </div>
