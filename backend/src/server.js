@@ -9,10 +9,11 @@ import sellerRoutes from './routes/seller.js'
 import buyerRoutes from './routes/buyer.js'
 import cartRoutes from './routes/cart.js'
 import stripeRoutes from './routes/stripe.js'
-import aiRoutes from './routes/ai.js'
-import voiceRoutes from './routes/voice.js'
 import http from 'http'
 import { Server as SocketIOServer } from 'socket.io'
+
+import aiRoutes from './routes/ai.js'
+import voiceRoutes from './routes/voice.js'
 
 dotenv.config()
 
