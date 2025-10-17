@@ -1,7 +1,16 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
+import AIResult from '../models/AIResult.js'
 
 const router = express.Router()
+
+async function saveAIResultSafe(userId, type, input, result, note) {
+  try {
+    await AIResult.create({ userId, type, input, result, note })
+  } catch (e) {
+    console.error('Failed to save AIResult', { type, err: e?.message })
+  }
+}
 
 // Crop Recommendation endpoint
 router.post('/crop-recommendation', requireAuth, async (req, res) => {
@@ -15,7 +24,7 @@ router.post('/crop-recommendation', requireAuth, async (req, res) => {
 
     // Call the Python FastAPI service
     const pythonApiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000'
-    
+
     const response = await fetch(`${pythonApiUrl}/predict/`, {
       method: 'POST',
       headers: {
@@ -34,21 +43,31 @@ router.post('/crop-recommendation', requireAuth, async (req, res) => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      return res.status(response.status).json({ 
-        error: errorData.detail || 'Failed to get crop recommendation' 
+      return res.status(response.status).json({
+        error: errorData.detail || 'Failed to get crop recommendation'
       })
     }
 
     const data = await response.json()
-    res.json({ 
+
+    const output = {
       success: true,
       crop: data.result,
-      message: `Based on your soil conditions and location, we recommend growing ${data.result}` 
-    })
+      message: `Based on your soil conditions and location, we recommend growing ${data.result}`
+    }
+
+    saveAIResultSafe(
+      req.user.id,
+      'CROP_RECOMMENDATION',
+      { nitrogen, phosphorous, potassium, ph, state, district, month },
+      output
+    )
+
+    res.json(output)
   } catch (error) {
     console.error('Crop recommendation error:', error)
-    res.status(500).json({ 
-      error: 'Failed to get crop recommendation. Please ensure the ML service is running.' 
+    res.status(500).json({
+      error: 'Failed to get crop recommendation. Please ensure the ML service is running.'
     })
   }
 })
@@ -65,7 +84,7 @@ router.post('/yield-prediction', requireAuth, async (req, res) => {
 
     // Call the Python ML service
     const yieldApiUrl = process.env.YIELD_API_URL || 'http://localhost:8001'
-    
+
     try {
       const response = await fetch(`${yieldApiUrl}/predict-yield/`, {
         method: 'POST',
@@ -83,16 +102,24 @@ router.post('/yield-prediction', requireAuth, async (req, res) => {
 
       if (!response.ok) {
         const errorData = await response.json()
-        return res.status(response.status).json({ 
-          error: errorData.detail || 'Failed to predict crop yield' 
+        return res.status(response.status).json({
+          error: errorData.detail || 'Failed to predict crop yield'
         })
       }
 
       const data = await response.json()
+
+      saveAIResultSafe(
+        req.user.id,
+        'YIELD_PREDICTION',
+        { area, rainfall, fertilizer, crop, state },
+        data
+      )
+
       res.json(data)
     } catch (fetchError) {
       console.error('ML service not available, using fallback:', fetchError.message)
-      
+
       // Fallback to heuristic if ML service is down
       const score = calculateYieldScore(
         parseFloat(area),
@@ -108,6 +135,13 @@ router.post('/yield-prediction', requireAuth, async (req, res) => {
         recommendations: generateRecommendations(score, rainfall, fertilizer),
         note: 'Using fallback prediction (ML service unavailable)'
       }
+
+      saveAIResultSafe(
+        req.user.id,
+        'YIELD_PREDICTION',
+        { area, rainfall, fertilizer, crop, state },
+        prediction
+      )
 
       res.json(prediction)
     }
@@ -184,7 +218,7 @@ router.post('/disease-detection', requireAuth, async (req, res) => {
 
     // Call the Python Disease Detection service
     const diseaseApiUrl = process.env.DISEASE_API_URL || 'http://localhost:8002'
-    
+
     try {
       // Send base64 image directly to Python service
       const response = await fetch(`${diseaseApiUrl}/detect-base64/`, {
@@ -199,25 +233,60 @@ router.post('/disease-detection', requireAuth, async (req, res) => {
 
       if (!response.ok) {
         const errorData = await response.json()
-        return res.status(response.status).json({ 
-          error: errorData.detail || 'Failed to detect disease' 
+        return res.status(response.status).json({
+          error: errorData.detail || 'Failed to detect disease'
         })
       }
 
       const data = await response.json()
+
+      saveAIResultSafe(
+        req.user.id,
+        'DISEASE_DETECTION',
+        { image: 'base64_image', length: image?.length || 0 },
+        data
+      )
+
       res.json(data)
     } catch (fetchError) {
       console.error('Disease detection service not available:', fetchError.message)
-      
+
       // Fallback response
-      res.status(503).json({ 
+      const fallback = {
         error: 'Disease detection service is not available. Please ensure the ML service is running on port 8002.',
         note: 'Start the service with: python start_disease_server.py'
-      })
+      }
+
+      saveAIResultSafe(
+        req.user.id,
+        'DISEASE_DETECTION',
+        { image: 'base64_image', length: image?.length || 0 },
+        fallback
+      )
+
+      res.status(503).json(fallback)
     }
   } catch (error) {
     console.error('Disease detection error:', error)
     res.status(500).json({ error: 'Failed to process disease detection request' })
+  }
+})
+
+// Fetch recent AI results for the authenticated user
+router.get('/results', requireAuth, async (req, res) => {
+  try {
+    const { limit = '20', type } = req.query
+    const query = { userId: req.user.id }
+    if (type) query.type = String(type).toUpperCase()
+
+    const results = await AIResult.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Math.max(1, Math.min(100, parseInt(limit))))
+      .lean()
+
+    res.json({ results })
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch AI results' })
   }
 })
 
