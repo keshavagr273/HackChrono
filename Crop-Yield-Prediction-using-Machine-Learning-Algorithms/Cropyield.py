@@ -10,11 +10,11 @@ import os
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import Sequential
-from keras.layers.core import Dense,Activation,Dropout, Flatten
-from keras.utils.np_utils import to_categorical
+from tensorflow.keras.layers import Dense, Activation, Dropout, Flatten
+from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-import keras.layers
+from tensorflow.keras import layers
 from tensorflow.keras.models import model_from_json
 import pickle
 from sklearn.preprocessing import StandardScaler
@@ -155,7 +155,7 @@ def runLSTM():
     else:
         XX = X.reshape((X.shape[0], X.shape[1], 1)) 
         model = Sequential() #creating LSTM model object
-        model.add(keras.layers.LSTM(512,input_shape=(X.shape[1], 1))) #defining LSTM layer in sequential object
+        model.add(layers.LSTM(512,input_shape=(X.shape[1], 1))) #defining LSTM layer in sequential object
         model.add(Dropout(0.5)) #removing irrelevant dataset features
         model.add(Dense(256, activation='relu'))#create another layer
         model.add(Dense(Y.shape[1], activation='softmax'))#predict two values as normal or Dyslipidemia disease
