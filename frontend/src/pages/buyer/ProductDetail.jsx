@@ -3,6 +3,7 @@ import BuyerNav from '../../components/BuyerNav'
 import { useCart } from '../../context/CartContext'
 import { useEffect, useState } from 'react'
 import { apiGet, apiAuthPost } from '../../lib/api'
+import { createOffer, getLatestForBuyerProduct, subscribeNegotiations } from '../../context/Negotiation'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -11,6 +12,10 @@ export default function ProductDetail() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [qty, setQty] = useState(1)
+  const [offerOpen, setOfferOpen] = useState(false)
+  const [offerPrice, setOfferPrice] = useState('')
+  const [acceptedPrice, setAcceptedPrice] = useState(null)
+  const [negStatus, setNegStatus] = useState(null)
 
   useEffect(() => {
     let aborted = false
@@ -37,6 +42,21 @@ export default function ProductDetail() {
     }
     load()
     return () => { aborted = true }
+  }, [id])
+
+  // Subscribe to negotiation updates so buyer sees accepted/declined status and price
+  useEffect(() => {
+    const applyLatest = () => {
+      const latest = getLatestForBuyerProduct({ buyerId: 'buyer_demo', productId: id })
+      setNegStatus(latest ? latest.status : null)
+      if (latest && latest.status === 'accepted') setAcceptedPrice(latest.offerPricePerKg)
+      else setAcceptedPrice(null)
+    }
+    // initial read
+    applyLatest()
+    // subscribe for future updates
+    const unsub = subscribeNegotiations(applyLatest)
+    return unsub
   }, [id])
 
   if (loading) {
@@ -128,11 +148,14 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Price per {product.unit}</p>
-                  <p className="text-3xl font-bold text-green-600">₹{product.price}</p>
+                  <p className="text-3xl font-bold text-green-600">₹{acceptedPrice ?? product.price}</p>
+                  {negStatus && (
+                    <p className={`mt-1 text-sm ${negStatus==='accepted'?'text-green-600':negStatus==='declined'?'text-red-600':'text-gray-600'}`}>Offer {negStatus}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-600">Total Value</p>
-                  <p className="text-lg font-semibold text-gray-900">₹{(product.price * product.qtyAvailable).toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-gray-900">₹{((acceptedPrice ?? product.price) * product.qtyAvailable).toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -180,18 +203,19 @@ export default function ProductDetail() {
                       </button>
                     </div>
                     <div className="text-sm text-gray-600">
-                      Total: <span className="font-semibold text-gray-900">₹{(product.price * qty).toLocaleString()}</span>
+                      Total: <span className="font-semibold text-gray-900">₹{(((acceptedPrice ?? product.price) * qty) || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
 
+                {negStatus !== 'declined' && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button 
                     onClick={async () => {
                       try {
                         await apiAuthPost('/api/cart/items', { listingId: product.id, quantityKg: qty })
                       } catch {}
-                      dispatch({ type: 'ADD', item: { id: product.id, name: product.name, price: product.price }, quantity: qty })
+                      dispatch({ type: 'ADD', item: { id: product.id, name: product.name, price: acceptedPrice ?? product.price }, quantity: qty })
                     }} 
                     className="flex items-center justify-center rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700 transition-all duration-300 hover:shadow-lg"
                   >
@@ -215,7 +239,23 @@ export default function ProductDetail() {
                     </svg>
                     Buy Now (COD)
                   </button>
+                  
+                  {negStatus !== 'accepted' && (
+                  <button
+                    onClick={() => {
+                      setOfferOpen(true)
+                      setOfferPrice(String(product.price))
+                    }}
+                    className="flex items-center justify-center rounded-xl border-2 border-blue-600 px-6 py-3 font-semibold text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                  >
+                    <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h3m0 0h12m-12 0V7m0 3v3m12-3h3m-3 0v3m0-3V7" />
+                    </svg>
+                    Make Offer
+                  </button>
+                  )}
                 </div>
+                )}
 
                 <Link 
                   to="/buyer/cart" 
@@ -289,6 +329,42 @@ export default function ProductDetail() {
           </div>
         </div>
       </main>
+
+      {offerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Make an Offer</h3>
+            <p className="text-sm text-gray-600 mb-4">Propose your price per {product.unit} and quantity.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Price per {product.unit} (₹)</label>
+                <input value={offerPrice} onChange={(e)=>setOfferPrice(e.target.value)} type="number" min="1" className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Quantity ({product.unit})</label>
+                <input value={qty} onChange={(e)=>setQty(Number(e.target.value))} type="number" min="1" max={product.qtyAvailable||undefined} className="w-full rounded-lg border border-gray-300 px-3 py-2" />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={()=>setOfferOpen(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm">Cancel</button>
+              <button onClick={()=>{
+                createOffer({
+                  productId: product.id,
+                  productName: product.name,
+                  sellerId: product.farmer.id,
+                  sellerName: product.farmer.name,
+                  buyerId: 'buyer_demo',
+                  buyerName: 'You',
+                  quantityKg: qty,
+                  offerPricePerKg: Number(offerPrice) || product.price,
+                })
+                setOfferOpen(false)
+                alert('Offer sent to seller!')
+              }} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Send Offer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
